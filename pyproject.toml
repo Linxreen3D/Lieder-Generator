@@ -1,0 +1,19 @@
+[project]
+name = "liedgen"
+version = "0.1.0"
+description = "Viral-orientierter Song-Generator für Suno AI mit Multi-Artist-Portfolio"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+ai = ["anthropic>=2.10"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+liedgen = "liedgen.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["liedgen*"]
+
+[tool.setuptools.package-data]
+liedgen = ["web/*.html"]
