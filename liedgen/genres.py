@@ -270,6 +270,13 @@ _reg(GenreProfile(
 ))
 
 
+def focus_keys() -> list[str]:
+    """Nischen aus LIEDGEN_FOCUS (kommagetrennt); leer = alle."""
+    import os
+    keys = [k.strip() for k in os.environ.get("LIEDGEN_FOCUS", "").split(",") if k.strip() in GENRES]
+    return keys or list(GENRES)
+
+
 def get(key: str) -> GenreProfile:
     try:
         return GENRES[key]

@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 from . import generator, trends
-from .genres import GENRES, get as get_genre
+from .genres import GENRES, focus_keys, get as get_genre
 from .portfolio import DEFAULT_PAYOUT_EUR, STATUSES, Portfolio
 from .viral import score_song
 
@@ -33,7 +33,7 @@ def print_report(rep) -> None:
 
 
 def cmd_genres(a):
-    for g in GENRES.values():
+    for g in (GENRES[k] for k in focus_keys()):
         if a.verbose:
             print(f"\n=== {g.key}: {g.name} ===\n{g.description}")
             print(f"BPM {g.bpm_min}-{g.bpm_max} (opt {g.bpm_opt}) | Länge {g.duration_min_s}-{g.duration_max_s}s"
@@ -150,7 +150,7 @@ def cmd_stats(a):
 
 def cmd_serve(a):
     from .server import serve
-    serve(a.db, a.host, a.port, a.trends, a.payout)
+    serve(a.db, a.host, a.port, a.trends, a.payout, a.open)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -222,11 +222,33 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--port", type=int, default=8765)
     s.add_argument("--trends", help="Chart-CSV für den Trends-Tab")
     s.add_argument("--payout", type=float, default=DEFAULT_PAYOUT_EUR)
+    s.add_argument("--open", action="store_true", help="Browser automatisch öffnen")
     s.set_defaults(func=cmd_serve)
     return p
 
 
+def load_env(path: str = ".env") -> None:
+    """Einfache .env-Unterstützung (KEY=wert); leere Werte und bereits gesetzte Variablen werden ignoriert."""
+    p = Path(path)
+    if not p.exists():
+        return
+    for line in p.read_text(encoding="utf-8-sig").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        k, v = k.strip(), v.strip().strip('"').strip("'")
+        if v and not os.environ.get(k):
+            os.environ[k] = v
+
+
 def main(argv: list[str] | None = None) -> None:
+    for stream in (sys.stdout, sys.stderr):   # Windows-Konsole: Umlaute/Balken sicher ausgeben
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+    load_env()
     trends.apply_calibration(CAL_FILE)
     a = build_parser().parse_args(argv)
     try:

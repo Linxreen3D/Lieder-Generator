@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 
 from . import generator, trends
-from .genres import GENRES, get as get_genre
+from .genres import GENRES, focus_keys, get as get_genre
 from .portfolio import STATUSES, Portfolio
 from .viral import score_song
 
@@ -37,7 +37,7 @@ def make_handler(pf: Portfolio, trends_csv: str | None, payout: float):
                     html = resources.files("liedgen.web").joinpath("index.html").read_bytes()
                     return self._send(200, html, "text/html")
                 if self.path == "/api/genres":
-                    return self._send(200, {"genres": [g.to_dict() for g in GENRES.values()],
+                    return self._send(200, {"genres": [GENRES[k].to_dict() for k in focus_keys()],
                                             "statuses": STATUSES,
                                             "claude": generator.claude_available()})
                 if self.path == "/api/dashboard":
@@ -96,10 +96,16 @@ def make_handler(pf: Portfolio, trends_csv: str | None, payout: float):
     return Handler
 
 
-def serve(db: str, host: str, port: int, trends_csv: str | None, payout: float) -> None:
+def serve(db: str, host: str, port: int, trends_csv: str | None, payout: float, open_browser: bool = False) -> None:
     pf = Portfolio(db)
     srv = ThreadingHTTPServer((host, port), make_handler(pf, trends_csv, payout))
-    print(f"liedgen läuft auf http://{host}:{port}  (Strg+C zum Beenden)")
+    url = f"http://{host}:{port}"
+    print(f"liedgen läuft auf {url}  (Fenster schließen oder Strg+C zum Beenden)")
+    print("Claude-Backend:", "aktiv" if generator.claude_available() else "aus (Offline-Modus, kein API-Key in .env)")
+    if open_browser:
+        import threading
+        import webbrowser
+        threading.Timer(0.8, webbrowser.open, (url,)).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

@@ -25,6 +25,21 @@ liedgen serve                                       # Web-Dashboard auf http://1
 
 Ohne Installation geht auch `python -m liedgen …`.
 
+## Windows: Installation per Doppelklick
+
+1. **Python installieren** (einmalig): <https://www.python.org/downloads/> – beim Setup
+   **„Add python.exe to PATH“ anhaken**. Alternativ in PowerShell: `winget install Python.Python.3.12`
+2. **Projekt herunterladen**: auf GitHub den Branch wählen → *Code* → *Download ZIP* → entpacken
+   (z.B. nach `C:\Musik\Lieder-Generator`). Oder mit Git: `git clone` + `git checkout <branch>`.
+3. **`install.bat`** doppelklicken – legt `.venv` an, installiert alles und erzeugt die Datei `.env`.
+4. Optional: **`.env`** mit dem Editor öffnen und `ANTHROPIC_API_KEY=` eintragen (für Claude-Lyrics).
+   Dort steht auch `LIEDGEN_FOCUS` – welche Nischen im Tool erscheinen.
+5. **`start.bat`** doppelklicken – der Browser öffnet das Dashboard (<http://127.0.0.1:8765>).
+   Das schwarze Fenster offen lassen, solange du arbeitest.
+
+Deine Daten liegen in `liedgen.db` im Projektordner (regelmäßig sichern).
+Meldet Windows beim ersten Start „Der Computer wurde durch Windows geschützt“: *Weitere Informationen → Trotzdem ausführen*.
+
 ## Enthaltene Nischen
 
 | Key | Nische | Sprache | Sweet-Spot | Warum |
