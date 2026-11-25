@@ -40,6 +40,14 @@ Ohne Installation geht auch `python -m liedgen …`.
 Deine Daten liegen in `liedgen.db` im Projektordner (regelmäßig sichern).
 Meldet Windows beim ersten Start „Der Computer wurde durch Windows geschützt“: *Weitere Informationen → Trotzdem ausführen*.
 
+## Kostenlos: Lyrics über den Claude-Chat (ohne API-Guthaben)
+
+Im Generator als Backend **„Claude-Chat (kostenlos)“** wählen → *Generieren* zeigt einen Prompt.
+Den in einem neuen Chat auf <https://claude.ai> einfügen, die komplette Antwort zurückkopieren und
+*Auswerten* klicken – Bewertung und Suno-Export wie beim API-Modus. Per CLI:
+`liedgen prompt balkan_ballade -n 3 --out prompt.txt` und `liedgen import balkan_ballade antwort.txt --save 1`.
+Tipp: max. 3 Kandidaten pro Chat, sonst wird die Antwort zu lang.
+
 ## Enthaltene Nischen
 
 | Key | Nische | Sprache | Sweet-Spot | Warum |

@@ -63,6 +63,12 @@ def make_handler(pf: Portfolio, trends_csv: str | None, payout: float):
                     cands = generator.generate(body["genre"], int(body.get("n", 4)), body.get("theme") or None,
                                                body.get("backend", "auto"))
                     return self._send(200, [c.to_dict() for c in cands])
+                if self.path == "/api/prompt":
+                    return self._send(200, {"prompt": generator.manual_prompt(
+                        body["genre"], int(body.get("n", 3)), body.get("theme") or None)})
+                if self.path == "/api/import":
+                    cands = generator.import_answer(body["genre"], body["text"])
+                    return self._send(200, [c.to_dict() for c in cands])
                 if self.path == "/api/score":
                     g = get_genre(body["genre"])
                     rep = score_song(body.get("title", ""), body["lyrics"], g, body.get("bpm") or None)

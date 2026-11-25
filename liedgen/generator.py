@@ -205,17 +205,54 @@ def generate_claude(g: GenreProfile, n: int, theme: str | None) -> list[Candidat
     if msg.stop_reason == "max_tokens":
         raise RuntimeError("Antwort abgeschnitten (max_tokens) – weniger Kandidaten anfordern.")
     text = next(b.text for b in msg.content if b.type == "text")
-    data = json.loads(text)
+    return _from_json(g, json.loads(text), "claude")
 
+
+def _from_json(g: GenreProfile, data: dict, backend: str) -> list[Candidate]:
     struct_tags = [s.tag.lower() for s in g.structure]
     out = []
     for s in data["songs"]:
         secs = [L.LyricSection(x["tag"], [l for l in x["lines"] if l.strip()]) for x in s["sections"]]
         bars = [sec.bars for sec in g.structure] if [x.tag.lower() for x in secs] == struct_tags else []
-        c = Candidate(g.key, s["title"], L.render(secs), float(s["bpm"]), s["key"],
-                      concept=s["concept"], style_extra=s["style_extra"], bars=bars, backend="claude")
+        c = Candidate(g.key, s["title"], L.render(secs), float(s.get("bpm") or g.bpm_opt),
+                      s.get("key") or (g.keys[0] if g.keys else ""), concept=s.get("concept", ""),
+                      style_extra=s.get("style_extra", []), bars=bars, backend=backend)
         out.append(_finalize(c, g))
-    return out
+    return sorted(out, key=lambda c: c.report.total, reverse=True)
+
+
+# ---------------------------------------------------------------- Manuell über claude.ai (kostenlos)
+
+MANUAL_FORMAT = """
+Antworte AUSSCHLIESSLICH mit einem JSON-Codeblock in genau diesem Format (keine Erklärungen davor/danach):
+```json
+{"songs": [
+  {"title": "...", "concept": "1 Satz Idee", "bpm": 96, "key": "D minor",
+   "style_extra": ["tag1", "tag2"],
+   "sections": [{"tag": "Intro", "lines": []}, {"tag": "Verse 1", "lines": ["Zeile", "Zeile"]}]}
+]}
+```"""
+
+
+def manual_prompt(genre_key: str, n: int = 3, theme: str | None = None) -> str:
+    """Kompletter Prompt zum Einfügen in den claude.ai-Chat (ohne API-Kosten)."""
+    g = get_genre(genre_key)
+    return f"{SYSTEM_PROMPT}\n\n{_claude_prompt(g, n, theme)}\n{MANUAL_FORMAT}\n"
+
+
+def import_answer(genre_key: str, text: str) -> list[Candidate]:
+    """Antwort aus dem Chat einlesen (JSON, auch mit Codeblock/Text drumherum)."""
+    g = get_genre(genre_key)
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        raise ValueError("Kein JSON in der Antwort gefunden – bitte die komplette Antwort von Claude kopieren.")
+    try:
+        data = json.loads(text[start:end + 1])
+    except json.JSONDecodeError as e:
+        raise ValueError(f"JSON unvollständig oder fehlerhaft ({e.msg}). Claude bitten: 'Bitte nur das JSON nochmal komplett'.") from None
+    if isinstance(data, dict) and "songs" not in data and "sections" in data:
+        data = {"songs": [data]}
+    return _from_json(g, data, "claude.ai")
 
 
 def claude_available() -> bool:

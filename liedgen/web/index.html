@@ -61,9 +61,18 @@ details summary{cursor:pointer;color:var(--acc);font-size:14px}
     <div><label>Genre</label><select id="g_genre" class="gsel"></select></div>
     <div><label>Thema (optional)</label><input id="g_theme" placeholder="leer = aus Themenpool"></div>
     <div><label>Kandidaten</label><input id="g_n" type="number" value="4" min="1" max="8"></div>
-    <div><label>Backend</label><select id="g_be"><option value="auto">auto</option><option value="claude">Claude</option><option value="template">Offline</option></select></div>
+    <div><label>Backend</label><select id="g_be"><option value="manual">Claude-Chat (kostenlos)</option><option value="claude">Claude API</option><option value="template">Offline</option><option value="auto">auto</option></select></div>
     <div><button class="p" id="g_btn" onclick="gen()">Generieren</button></div>
   </div><p class="small muted" id="g_info"></p></div>
+  <div class="card" id="m_box" style="display:none">
+    <h3 style="margin-top:0">Kostenlos über den Claude-Chat</h3>
+    <ol class="small"><li>Prompt kopieren und in einem neuen Chat auf <a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a> einfügen.</li>
+    <li>Die komplette Antwort von Claude kopieren (Kopieren-Symbol am Codeblock).</li><li>Unten einfügen und „Auswerten“ klicken.</li></ol>
+    <div class="flex small"><b>Prompt</b><button class="s" onclick="navigator.clipboard.writeText($('m_prompt').value);this.textContent='kopiert ✓'">kopieren</button></div>
+    <textarea id="m_prompt" readonly style="min-height:120px"></textarea><br><br>
+    <label>Antwort von Claude hier einfügen</label><textarea id="m_answer" style="min-height:160px"></textarea><br><br>
+    <button class="p" onclick="importAnswer()">Auswerten</button>
+  </div>
   <div id="g_out"></div>
 </section>
 
@@ -100,7 +109,7 @@ function bar(v){const c=v>.75?'':v>.45?'mid':'low';return `<div class="bar ${c}"
 
 async function init(){const j=await api('/api/genres');S=j.statuses;j.genres.forEach(g=>G[g.key]=g);
   document.querySelectorAll('.gsel').forEach(s=>s.innerHTML=j.genres.map(g=>`<option value="${g.key}">${esc(g.name)}</option>`).join(''));
-  $('ai').textContent=j.claude?'Claude-Backend aktiv':'Offline-Modus (kein ANTHROPIC_API_KEY)';
+  $('ai').textContent=j.claude?'Claude-API aktiv':'Claude-Chat-Modus (kostenlos)';if(j.claude)$('g_be').value='auto';
   $('g_genre').onchange=()=>{const g=G[$('g_genre').value];$('g_info').textContent=`${g.description} · ${g.bpm_min}–${g.bpm_max} BPM · Hook ≤ ${g.hook_deadline_s}s · ${g.market_notes}`};$('g_genre').onchange();
   loadDash()}
 
@@ -117,8 +126,14 @@ function reportHtml(r,tips){const tl=r.timeline.map(t=>`<span class="${t.hook?'h
   ${tips&&tips.length?'<ul class="small">'+tips.map(t=>`<li>${esc(t)}</li>`).join('')+'</ul>':''}`}
 
 let LAST=[];
-async function gen(){const b=$('g_btn');b.disabled=true;b.textContent='Generiere…';$('g_out').innerHTML='';
-  try{LAST=await api('/api/generate',{genre:$('g_genre').value,theme:$('g_theme').value,n:+$('g_n').value,backend:$('g_be').value});
+async function gen(){const b=$('g_btn');$('g_out').innerHTML='';
+  if($('g_be').value==='manual'){try{const r=await api('/api/prompt',{genre:$('g_genre').value,theme:$('g_theme').value,n:Math.min(+$('g_n').value,3)});$('m_prompt').value=r.prompt;$('m_answer').value='';$('m_box').style.display='block'}catch(e){alert(e.message)}return}
+  $('m_box').style.display='none';b.disabled=true;b.textContent='Generiere…';
+  try{LAST=await api('/api/generate',{genre:$('g_genre').value,theme:$('g_theme').value,n:+$('g_n').value,backend:$('g_be').value});renderCands()}
+  catch(e){$('g_out').innerHTML=`<div class="card" style="color:var(--bad)">${esc(e.message)}</div>`}
+  b.disabled=false;b.textContent='Generieren'}
+async function importAnswer(){try{LAST=await api('/api/import',{genre:$('g_genre').value,text:$('m_answer').value});renderCands();$('g_out').scrollIntoView({behavior:'smooth'})}catch(e){alert(e.message)}}
+function renderCands(){
    $('g_out').innerHTML=LAST.map((c,i)=>`<div class="card"><div class="flex" style="justify-content:space-between"><h3 style="margin:0">#${i+1} ${esc(c.title)} <span class="pill">${c.backend}</span></h3>
    <div class="flex"><select id="as${i}"><option value="">– ohne Artist –</option>${ARTISTS.filter(a=>a.genre===c.genre).concat(ARTISTS.filter(a=>a.genre!==c.genre)).map(a=>`<option>${esc(a.name)}</option>`).join('')}</select><button class="s" onclick="saveCand(${i})">Ins Portfolio</button></div></div>
    <p class="small muted">${esc(c.concept)} · ${esc(c.key)}</p>${reportHtml(c.score,c.tips)}
@@ -126,8 +141,6 @@ async function gen(){const b=$('g_btn');b.disabled=true;b.textContent='Generiere
    <div class="flex small"><b>Style of Music</b><button class="s" onclick="cp(${i},'style')">kopieren</button></div><pre>${esc(c.suno.style)}</pre>
    <div class="flex small"><b>Exclude Styles</b><button class="s" onclick="cp(${i},'exclude_styles')">kopieren</button></div><pre>${esc(c.suno.exclude_styles)}</pre>
    <div class="flex small"><b>Lyrics</b><button class="s" onclick="cp(${i},'lyrics')">kopieren</button></div><pre>${esc(c.suno.lyrics)}</pre></details></div>`).join('')}
-  catch(e){$('g_out').innerHTML=`<div class="card" style="color:var(--bad)">${esc(e.message)}</div>`}
-  b.disabled=false;b.textContent='Generieren'}
 function cp(i,k){navigator.clipboard.writeText(LAST[i].suno[k])}
 async function saveCand(i){const c=LAST[i];try{const r=await api('/api/songs',{title:c.title,genre:c.genre,artist:$('as'+i).value||null,viral_score:+c.score.total.toFixed(1),bpm:c.bpm,suno:c.suno,lyrics:c.lyrics,notes:c.concept});alert('Gespeichert als Song #'+r.id)}catch(e){alert(e.message)}}
 

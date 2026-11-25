@@ -45,7 +45,10 @@ def cmd_genres(a):
 
 
 def cmd_generate(a):
-    cands = generator.generate(a.genre, a.n, a.theme, a.backend, a.seed)
+    _show_candidates(a, generator.generate(a.genre, a.n, a.theme, a.backend, a.seed))
+
+
+def _show_candidates(a, cands):
     out_dir = Path(a.out) if a.out else None
     if out_dir:
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -66,6 +69,21 @@ def cmd_generate(a):
             print(f"  → im Portfolio gespeichert (Song-ID {sid})")
     if out_dir:
         print(f"\nExport: {out_dir}/")
+
+
+def cmd_prompt(a):
+    text = generator.manual_prompt(a.genre, a.n, a.theme)
+    if a.out:
+        Path(a.out).write_text(text, encoding="utf-8")
+        print(f"Prompt gespeichert: {a.out} – Inhalt in claude.ai einfügen.")
+    else:
+        print(text)
+
+
+def cmd_import(a):
+    text = Path(a.file).read_text(encoding="utf-8") if a.file != "-" else sys.stdin.read()
+    a.backend, a.seed = None, None
+    _show_candidates(a, generator.import_answer(a.genre, text))
 
 
 def cmd_score(a):
@@ -174,6 +192,23 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--save", type=int, default=0, help="die besten N ins Portfolio speichern")
     s.add_argument("--artist", help="Artist für --save")
     s.set_defaults(func=cmd_generate)
+
+    s = sub.add_parser("prompt", help="Prompt für claude.ai erzeugen (kostenlos, ohne API-Key)")
+    s.add_argument("genre", choices=list(GENRES))
+    s.add_argument("-n", type=int, default=3)
+    s.add_argument("--theme")
+    s.add_argument("--out", help="in Datei schreiben statt anzeigen")
+    s.set_defaults(func=cmd_prompt)
+
+    s = sub.add_parser("import", help="Antwort aus claude.ai einlesen und bewerten")
+    s.add_argument("genre", choices=list(GENRES))
+    s.add_argument("file", help="Textdatei mit der Antwort oder '-'")
+    s.add_argument("--show", type=int, default=3)
+    s.add_argument("--full", action="store_true")
+    s.add_argument("--out")
+    s.add_argument("--save", type=int, default=0)
+    s.add_argument("--artist")
+    s.set_defaults(func=cmd_import)
 
     s = sub.add_parser("score", help="Eigene Lyrics bewerten (Datei im Suno-Format oder '-')")
     s.add_argument("file")

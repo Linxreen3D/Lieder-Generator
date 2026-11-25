@@ -91,3 +91,15 @@ def test_portfolio_dashboard(tmp_path):
     assert a["growth_7d"] < 0  # ältere Tage hatten mehr Streams
     with pytest.raises(ValueError):
         pf.set_status(sid, "quatsch")
+
+
+def test_manual_prompt_and_import():
+    from pathlib import Path
+    p = generator.manual_prompt("balkan_ballade", 2, "Heimweh")
+    assert "Heimweh" in p and '"songs"' in p and "[Chorus]" in p
+    answer = (Path(__file__).parent / "beispiel_antwort.txt").read_text(encoding="utf-8")
+    cands = generator.import_answer("balkan_ballade", answer)
+    assert cands[0].title == "Ne Zovi Me" and cands[0].backend == "claude.ai"
+    assert cands[0].report.total > 80 and "[Chorus]" in cands[0].suno.lyrics
+    with pytest.raises(ValueError):
+        generator.import_answer("balkan_ballade", "Sorry, kein JSON hier")

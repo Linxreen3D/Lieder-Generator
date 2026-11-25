@@ -1,0 +1,20 @@
+Hier sind deine Songs:
+
+```json
+{"songs": [
+ {"title": "Ne Zovi Me", "concept": "Sie ruft nachts an, er weiß, dass er wieder schwach wird", "bpm": 74, "key": "A minor",
+  "style_extra": ["late night", "violin solo"],
+  "sections": [
+   {"tag": "Intro", "lines": []},
+   {"tag": "Verse 1", "lines": ["Opet zvoni telefon u pola tri", "Znam da si to ti, znam da si to ti", "Rekla si da odlaziš zauvijek", "A sad mi treba za tebe lijek"]},
+   {"tag": "Chorus", "lines": ["Ne zovi me, ne zovi me noćas", "Srce je slabo, a ti si jača", "Ne zovi me, ne zovi me noćas", "Jer ću ti doći, i opet ću plakat"]},
+   {"tag": "Verse 2", "lines": ["Kafana prazna, pjesma stara", "Svaka mi riječ o tebi govori", "Pijem da zaboravim tvoja usta", "A čaša mi tvoje ime ponovi"]},
+   {"tag": "Pre-Chorus", "lines": ["A ti znaš, ti dobro znaš", "Da mi samo ti srce daš"]},
+   {"tag": "Chorus", "lines": ["Ne zovi me, ne zovi me noćas", "Srce je slabo, a ti si jača", "Ne zovi me, ne zovi me noćas", "Jer ću ti doći, i opet ću plakat"]},
+   {"tag": "Instrumental Break", "lines": []},
+   {"tag": "Final Chorus", "lines": ["Ne zovi me, ne zovi me noćas", "Srce je slabo, a ti si jača", "Ne zovi me, ne zovi me noćas", "Jer ću ti doći, i opet ću plakat"]},
+   {"tag": "Outro", "lines": ["Ne zovi me... (ne zovi me)"]}
+  ]}
+]}
+```
+Viel Erfolg!
